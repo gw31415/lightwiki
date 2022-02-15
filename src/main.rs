@@ -10,6 +10,8 @@ mod md2html;
 #[macro_use]
 extern crate lazy_static;
 
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+
 /// A simple wiki site program.
 #[derive(clap_parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -29,6 +31,10 @@ struct Args {
     /// Specify the special entry name corresponding to the home page.
     #[clap(long, default_value = "README")]
     home: String,
+    #[clap(short, long, default_value = "")]
+    cert: String,
+    #[clap(short = 'k', long, default_value = "")]
+    private_key: String,
 }
 
 lazy_static! {
@@ -104,16 +110,31 @@ lazy_static! {
 // entry point
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
-        App::new()
-            .route("/", web::get().to(router))
-            .route("/{entry}", web::get().to(router))
-    })
-    .bind(format!(
+    let address = format!(
         "{hostname}:{port}",
         hostname = ARGS.hostname,
         port = ARGS.port
-    ))?
+    );
+    let server = HttpServer::new(|| {
+        App::new()
+            .route("/", web::get().to(router))
+            .route("/{entry}", web::get().to(router))
+    });
+
+    let ssl_builder = (|| {
+        let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+        builder.set_private_key_file(&ARGS.private_key, SslFiletype::PEM)?;
+        builder.set_certificate_chain_file(&ARGS.cert)?;
+        std::io::Result::Ok(builder)
+    })();
+
+    match ssl_builder {
+        Ok(builder) => server.bind_openssl(address, builder)?,
+        Err(_) => {
+            eprintln!("Could not complete the configuration of TLS communication.");
+            server.bind(address)
+        }?,
+    }
     .run()
     .await
 }

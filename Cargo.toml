@@ -7,15 +7,14 @@ authors = ["gw31415 <git@amas.dev>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "3.3.3"
+actix-web = { version = "3.3.3", features = ["openssl"] }
 clap = { version = "3.0.14", features = ["derive"] }
 hostname = "0.3.1"
 lazy_static = "1.4.0"
+openssl = "0.10.38"
 pulldown-cmark = "0.9.1"
 rand = "0.8.4"
 regex = "1.5.4"
 sanitize-filename = "0.3.0"
 sanitize_html = "0.7.0"
 urlencoding = "2.1.0"
-
-[features]
