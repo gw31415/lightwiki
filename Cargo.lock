@@ -994,6 +994,7 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "clap",
+ "hostname",
  "lazy_static",
  "pulldown-cmark",
  "rand 0.8.5",

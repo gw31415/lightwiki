@@ -1,5 +1,6 @@
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use clap::Parser as clap_parser;
+use hostname::get as get_hostname;
 use regex::Regex;
 use sanitize_filename::sanitize as sanitize_path;
 use std::fs::File;
@@ -17,7 +18,9 @@ struct Args {
     #[clap(short, long, default_value_t = 80)]
     port: usize,
     /// Specify the host name of this computer.
-    #[clap(long, default_value = "localhost")]
+    #[clap(long, default_value_t = {
+        get_hostname().unwrap_or(std::ffi::OsString::from("localhost")).into_string().unwrap_or("localhost".to_string())
+    })]
     hostname: String,
     /// Specifies the site name of the wiki site.
     /// This will be assigned to the title attribute of the page.
