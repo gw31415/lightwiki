@@ -47,13 +47,14 @@ lazy_static! {
     let mut converter = md2html::Converter::new(|main, meta| {
         format!(
             r#"<!DOCTYPE html>
-<html>
+<html lang="ja">
     <head>
         <meta charset="utf-8">
         <title>{wiki_name} | {entry_name}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="A wiki site developed for personal use." />
 
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css" integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css" integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ" crossorigin="anonymous" />
         <link rel="stylesheet" href="https://unpkg.com/latex.css/style.min.css" />
         <style>
             body {{ font-family: 'Times New Roman', "游明朝体", 'Yu Mincho', 'YuMincho', 'Noto Serif JP', serif; }}
