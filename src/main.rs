@@ -5,6 +5,7 @@ use regex::Regex;
 use sanitize_filename::sanitize as sanitize_path;
 use std::fs::File;
 use std::io::prelude::*;
+use katex;
 use urlencoding::encode as urlencode;
 mod md2html;
 #[macro_use]
@@ -52,15 +53,11 @@ lazy_static! {
         <title>{wiki_name} | {entry_name}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css" integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ" crossorigin="anonymous">
         <link rel="stylesheet" href="https://unpkg.com/latex.css/style.min.css" />
         <style>
             body {{ font-family: 'Times New Roman', "游明朝体", 'Yu Mincho', 'YuMincho', 'Noto Serif JP', serif; }}
         </style>
-
-        <link rel="stylesheet" href="https://latex.now.sh/prism/prism.css">
-        <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/prismjs@1.26.0/components/prism-latex.min.js" crossorigin="anonymous"></script>
-        <script type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 
         <style>
             body {{
@@ -73,8 +70,7 @@ lazy_static! {
     <body>
 
 <main class="container">
-{main}
-</main>
+{main}</main>
 
     </body>
 </html>"#,
@@ -83,19 +79,22 @@ lazy_static! {
         )
     });
     for reg in [
-        r"\$\$(?s:.)*?\$\$",
-        r"\\\((?s:.)*?\\\)",
-        r"\\\[(?s:.)*?\\\]",
-        r"\\begin\{\w+\*?\}(?s:.)*?\\end\{\w+\*?\}",
+        r"\$\$((?s:.)*?)\$\$",
+        r"\\\[((?s:.)*?)\\\]",
     ] {
         converter
             .bypass_rules
             .push((Regex::new(reg).unwrap(), |caps| {
-                let mut escaped = String::new();
-                pulldown_cmark::escape::escape_html(&mut escaped, &caps[0]).unwrap();
-                escaped
+                let opts = katex::Opts::builder().display_mode(true).build().unwrap();
+                katex::render_with_opts(&caps[1], &opts).unwrap()
             }));
     }
+    converter
+        .bypass_rules
+        .push((Regex::new(r"\\\(((?s:.)*?)\\\)").unwrap(), |caps| {
+            let opts = katex::Opts::builder().display_mode(false).build().unwrap();
+            katex::render_with_opts(&caps[1], &opts).unwrap()
+        }));
     converter
         .bypass_rules
         .push((Regex::new(r"\[\[(.*?)\]\]").unwrap(), |caps| {

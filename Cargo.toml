@@ -10,6 +10,7 @@ authors = ["gw31415 <git@amas.dev>"]
 actix-web = { version = "3.3.3", features = ["openssl"] }
 clap = { version = "3.0.14", features = ["derive"] }
 hostname = "0.3.1"
+katex = "0.4.3"
 lazy_static = "1.4.0"
 openssl = "0.10.38"
 pulldown-cmark = "0.9.1"
