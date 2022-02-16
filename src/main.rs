@@ -32,10 +32,15 @@ struct Args {
     /// Specify the special entry name corresponding to the home page.
     #[clap(long, default_value = "README")]
     home: String,
-    #[clap(short, long, default_value = "")]
-    cert: String,
-    #[clap(short = 'k', long, default_value = "")]
-    private_key: String,
+    /// Enable TLS communication.
+    #[clap(long)]
+    tls: bool,
+    /// Specifies a TLS certificate.
+    #[clap(short, long, default_value = "fullchain.pem")]
+    certificate: String,
+    /// Specifies the private key for TLS.
+    #[clap(short = 'k', long, default_value = "privkey.pem")]
+    priv_key: String,
 }
 
 lazy_static! {
@@ -120,19 +125,13 @@ async fn main() -> std::io::Result<()> {
             .route("/{entry}", web::get().to(router))
     });
 
-    let ssl_builder = (|| {
+    if ARGS.tls {
         let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-        builder.set_private_key_file(&ARGS.private_key, SslFiletype::PEM)?;
-        builder.set_certificate_chain_file(&ARGS.cert)?;
-        std::io::Result::Ok(builder)
-    })();
-
-    match ssl_builder {
-        Ok(builder) => server.bind_openssl(address, builder)?,
-        Err(_) => {
-            eprintln!("Could not complete the configuration of TLS communication.");
-            server.bind(address)
-        }?,
+        builder.set_private_key_file(&ARGS.priv_key, SslFiletype::PEM)?;
+        builder.set_certificate_chain_file(&ARGS.certificate)?;
+        server.bind_openssl(address, builder)?
+    } else {
+        server.bind(address)?
     }
     .run()
     .await
