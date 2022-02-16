@@ -57,16 +57,15 @@ lazy_static! {
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css" integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ" crossorigin="anonymous" />
         <link rel="stylesheet" href="https://unpkg.com/latex.css/style.min.css" />
         <style>
-            body {{ font-family: 'Times New Roman', "游明朝体", 'Yu Mincho', 'YuMincho', 'Noto Serif JP', serif; }}
-        </style>
-
-        <style>
             body {{
+                font-family: 'Times New Roman', "游明朝体", 'Yu Mincho', 'YuMincho', 'Noto Serif JP', serif;
                 overflow: auto scroll hidden;
                 overflow-wrap: break-word;
                 word-wrap: break-word;
             }}
+            .katex-display {{ overflow: auto hidden }}
         </style>
+
     </head>
     <body>
 
