@@ -92,7 +92,7 @@ impl Converter {
                                 return Event::Html(text_escaped.replace(label, &processed).into())
                             }
                         } else {
-                            shelter.push_front(refugee);
+                            shelter.push_front(refugee); // 該当しなかった場合もとに戻す
                         }
                     }
                     Event::Text(text)
