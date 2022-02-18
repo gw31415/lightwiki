@@ -51,14 +51,14 @@ impl Converter {
             let (reg, replacer) = rule;
             markdown = reg
                 .replace_all(&markdown, |caps: &Captures| {
-                    let label_u64 = rng.gen::<u64>();
+                    let label = format!("{:>016x}", rng.gen::<u64>());
                     let processed = replacer(caps);
                     shelter.push_back(Refugee {
-                        label: format!("{:>016x}", label_u64),
+                        label: label.clone(),
                         processed,
                         source: caps[0].to_string(),
                     });
-                    format!(" {:>016x} ", label_u64)
+                    label
                 })
                 .to_string();
         }
