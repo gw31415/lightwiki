@@ -46,14 +46,14 @@ impl Converter {
     pub fn convert(&self, mut markdown: String, metadata: MetaData) -> String {
         // 特定の文字列をバイパス
         let mut rng = rand::thread_rng();
-        let mut shelter: Vec<Refugee> = Default::default();
+        let mut shelter: std::collections::VecDeque<Refugee> = Default::default();
         for rule in &self.bypass_rules {
             let (reg, replacer) = rule;
             markdown = reg
                 .replace_all(&markdown, |caps: &Captures| {
                     let label_u64 = rng.gen::<u64>();
                     let processed = replacer(caps);
-                    shelter.push(Refugee {
+                    shelter.push_back(Refugee {
                         label: format!("{:>016x}", label_u64),
                         processed,
                         source: caps[0].to_string(),
@@ -77,21 +77,24 @@ impl Converter {
                     Event::End(tag)
                 }
                 Event::Text(mut text) => {
-                    if let Some(Tag::CodeBlock(_)) = tag_stack.last() {
-                        for refugee in &shelter {
-                            let Refugee { label, source, .. } = &refugee;
-                            text = text.replace(label, &source).into();
+                    if let Some(refugee) = shelter.pop_front() {
+                        if let Some(_) = text.as_ref().find(&refugee.label) {
+                            if let Some(Tag::CodeBlock(_)) = tag_stack.last() {
+                                let Refugee { label, source, .. } = &refugee;
+                                text = text.replace(label, &source).into();
+                                return Event::Text(text)
+                            } else {
+                                let Refugee {
+                                    label, processed, ..
+                                } = &refugee;
+                                text = text.replace(label, &processed).into();
+                                return Event::Html(text)
+                            }
+                        } else {
+                            shelter.push_front(refugee);
                         }
-                        Event::Text(text)
-                    } else {
-                        for refugee in &shelter {
-                            let Refugee {
-                                label, processed, ..
-                            } = &refugee;
-                            text = text.replace(label, &processed).into();
-                        }
-                        Event::Html(text)
                     }
+                    Event::Text(text)
                 }
                 Event::Code(mut code) => {
                     for refugee in &shelter {
