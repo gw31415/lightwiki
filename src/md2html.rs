@@ -87,8 +87,9 @@ impl Converter {
                                 let Refugee {
                                     label, processed, ..
                                 } = &refugee;
-                                text = text.replace(label, &processed).into();
-                                return Event::Html(text)
+                                let mut text_escaped = String::new();
+                                pulldown_cmark::escape::escape_html(&mut text_escaped, &text).unwrap();
+                                return Event::Html(text_escaped.replace(label, &processed).into())
                             }
                         } else {
                             shelter.push_front(refugee);
