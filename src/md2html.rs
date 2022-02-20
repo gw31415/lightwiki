@@ -1,3 +1,4 @@
+use base64::{encode_config, URL_SAFE_NO_PAD};
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use rand::Rng;
 use regex::{Captures, Regex};
@@ -27,7 +28,6 @@ pub struct MetaData {
 }
 
 struct Refugee {
-    label: String,
     processed: String,
     source: String,
 }
@@ -45,20 +45,25 @@ impl Converter {
     /// MarkdownをHtmlに変換します
     pub fn convert(&self, mut markdown: String, metadata: MetaData) -> String {
         // 特定の文字列をバイパス
-        let mut rng = rand::thread_rng();
-        let mut shelter: std::collections::VecDeque<Refugee> = Default::default();
+        let (start_label, end_label) = {
+            let mut rng = rand::thread_rng();
+            (
+                encode_config(&rng.gen::<u32>().to_be_bytes(), URL_SAFE_NO_PAD),
+                encode_config(&rng.gen::<u32>().to_be_bytes(), URL_SAFE_NO_PAD),
+            )
+        };
+        let mut shelter: Vec<Refugee> = Default::default();
+        let label_regex = Regex::new(&format!(r"{}(\d+){}", start_label, end_label)).unwrap();
         for rule in &self.bypass_rules {
             let (reg, replacer) = rule;
             markdown = reg
                 .replace_all(&markdown, |caps: &Captures| {
-                    let label = format!("{:>016x}", rng.gen::<u64>());
                     let processed = replacer(caps);
-                    shelter.push_back(Refugee {
-                        label: label.clone(),
+                    shelter.push(Refugee {
                         processed,
                         source: caps[0].to_string(),
                     });
-                    label
+                    format!("{}{}{}", start_label, shelter.len() - 1, end_label)
                 })
                 .to_string();
         }
@@ -76,33 +81,36 @@ impl Converter {
                     tag_stack.pop();
                     Event::End(tag)
                 }
-                Event::Text(mut text) => {
-                    if let Some(refugee) = shelter.pop_front() {
-                        if let Some(_) = text.as_ref().find(&refugee.label) {
-                            if let Some(Tag::CodeBlock(_)) = tag_stack.last() {
-                                let Refugee { label, source, .. } = &refugee;
-                                text = text.replace(label, &source).into();
-                                return Event::Text(text)
-                            } else {
-                                let Refugee {
-                                    label, processed, ..
-                                } = &refugee;
-                                let mut text_escaped = String::new();
-                                pulldown_cmark::escape::escape_html(&mut text_escaped, &text).unwrap();
-                                return Event::Html(text_escaped.replace(label, &processed).into())
-                            }
-                        } else {
-                            shelter.push_front(refugee); // 該当しなかった場合もとに戻す
-                        }
+                Event::Text(text) => {
+                    if let Some(Tag::CodeBlock(_)) = tag_stack.last() {
+                        let processed = label_regex
+                            .replace_all(&text, |caps: &Captures| {
+                                let i: usize = caps[1].parse().unwrap();
+                                shelter[i].source.clone()
+                            })
+                            .to_string();
+                        Event::Text(processed.into())
+                    } else {
+                        use pulldown_cmark::escape::escape_html;
+                        let mut escaped = String::new();
+                        escape_html(&mut escaped, &text).unwrap();
+                        let processed = label_regex
+                            .replace_all(&escaped, |caps: &Captures| {
+                                let i: usize = caps[1].parse().unwrap();
+                                shelter[i].processed.clone()
+                            })
+                            .to_string();
+                        Event::Html(processed.into())
                     }
-                    Event::Text(text)
                 }
-                Event::Code(mut code) => {
-                    for refugee in &shelter {
-                        let Refugee { label, source, .. } = &refugee;
-                        code = code.replace(label, &source).into();
-                    }
-                    Event::Code(code)
+                Event::Code(code) => {
+                    let processed = label_regex
+                        .replace_all(&code, |caps: &Captures| {
+                            let i: usize = caps[1].parse().unwrap();
+                            shelter[i].source.clone()
+                        })
+                        .to_string();
+                    Event::Code(processed.into())
                 }
                 _ => event,
             });

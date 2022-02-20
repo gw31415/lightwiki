@@ -5,6 +5,12 @@ Light Wikiへようこそ！
 これはシンプルなWikiサイトをホストするためのプログラムです。
 
 ## 記法
+### MediaWikiみたいなリンク
+```markdown
+[[README]]
+```
+[[README]]
+
 ### Markdown
 [CommonMark](https://commonmark.org)で書くことができます。
 
