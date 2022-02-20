@@ -27,8 +27,11 @@ pub struct MetaData {
     pub wiki_name: String,
 }
 
+/// 別方法で変換する要素
 struct Refugee {
+    /// 変換後のテキスト
     processed: String,
+    /// 変換前のテキスト
     source: String,
 }
 
@@ -45,7 +48,7 @@ impl Converter {
     /// MarkdownをHtmlに変換します
     pub fn convert(&self, mut markdown: String, metadata: MetaData) -> String {
         // 特定の文字列をバイパス
-        let (start_label, end_label) = {
+        let (start_label, end_label) = { // バイパスする文字列を避けた後に置換するラベル
             let mut rng = rand::thread_rng();
             (
                 encode_config(&rng.gen::<u32>().to_be_bytes(), URL_SAFE_NO_PAD),
@@ -53,7 +56,7 @@ impl Converter {
             )
         };
         let mut shelter: Vec<Refugee> = Default::default();
-        let label_regex = Regex::new(&format!(r"{}(\d+){}", start_label, end_label)).unwrap();
+        let label_regex = Regex::new(&format!(r"{}(\d+){}", start_label, end_label)).unwrap(); // start_labelとend_labelの間に対応するRefugeeのshelter内のインデックスが記載されている
         for rule in &self.bypass_rules {
             let (reg, replacer) = rule;
             markdown = reg
@@ -92,10 +95,10 @@ impl Converter {
                         Event::Text(processed.into())
                     } else {
                         use pulldown_cmark::escape::escape_html;
-                        let mut escaped = String::new();
-                        escape_html(&mut escaped, &text).unwrap();
+                        let mut text_html_escaped = String::new();
+                        escape_html(&mut text_html_escaped, &text).unwrap();
                         let processed = label_regex
-                            .replace_all(&escaped, |caps: &Captures| {
+                            .replace_all(&text_html_escaped, |caps: &Captures| {
                                 let i: usize = caps[1].parse().unwrap();
                                 shelter[i].processed.clone()
                             })
