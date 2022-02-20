@@ -102,7 +102,7 @@ lazy_static! {
         }));
     converter
         .bypass_rules
-        .push((Regex::new(r"\[\[(.*?)\]\]").unwrap(), |caps| {
+        .push((Regex::new(r"\[\[\s*(.*?)\s*\]\]").unwrap(), |caps| {
             let entry = &caps[1];
             let encoded = urlencode(entry);
             format!(r#"<a href="./{encoded}">{entry}</a>"#)

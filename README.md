@@ -7,9 +7,9 @@ Light Wikiへようこそ！
 ## 記法
 ### MediaWikiみたいなリンク
 ```markdown
-[[README]]
+[[ README ]]
 ```
-[[README]]
+[[ README ]]
 
 ### Markdown
 [CommonMark](https://commonmark.org)で書くことができます。
