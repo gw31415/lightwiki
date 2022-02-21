@@ -1,4 +1,4 @@
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, get};
 use clap::Parser as clap_parser;
 use hostname::get as get_hostname;
 use regex::Regex;
@@ -60,16 +60,7 @@ lazy_static! {
         <meta name="description" content="A wiki site developed for personal use." />
 
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css" integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ" crossorigin="anonymous" />
-        <link rel="stylesheet" href="https://unpkg.com/latex.css/style.min.css" />
-        <style>
-            body {{
-                font-family: 'Times New Roman', "游明朝体", 'Yu Mincho', 'YuMincho', 'Noto Serif JP', serif;
-                overflow: auto scroll hidden;
-                overflow-wrap: break-word;
-                word-wrap: break-word;
-            }}
-            .katex-display {{ overflow: auto hidden }}
-        </style>
+        <link rel="stylesheet" href="/default.css" />
 
     </head>
     <body>
@@ -121,6 +112,7 @@ async fn main() -> std::io::Result<()> {
     );
     let server = HttpServer::new(|| {
         App::new()
+            .service(default_css)
             .route("/", web::get().to(router))
             .route("/{entry}", web::get().to(router))
     });
@@ -135,6 +127,11 @@ async fn main() -> std::io::Result<()> {
     }
     .run()
     .await
+}
+
+#[get("/default.css")]
+async fn default_css() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok().content_type("text/css").body(std::include_str!("./default.css")))
 }
 
 // route wiki pages
