@@ -1,4 +1,4 @@
-use base64::{encode_config, URL_SAFE_NO_PAD};
+use base64::{encode_config, CRYPT};
 use pulldown_cmark::{html, Event, Options, Parser, Tag};
 use rand::Rng;
 use regex::{Captures, Regex};
@@ -51,8 +51,8 @@ impl Converter {
         let (start_label, end_label) = { // バイパスする文字列を避けた後に置換するラベル
             let mut rng = rand::thread_rng();
             (
-                encode_config(&rng.gen::<u32>().to_be_bytes(), URL_SAFE_NO_PAD),
-                encode_config(&rng.gen::<u32>().to_be_bytes(), URL_SAFE_NO_PAD),
+                encode_config(&rng.gen::<u32>().to_be_bytes(), CRYPT),
+                encode_config(&rng.gen::<u32>().to_be_bytes(), CRYPT),
             )
         };
         let mut shelter: Vec<Refugee> = Default::default();
