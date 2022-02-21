@@ -1,11 +1,13 @@
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, get};
+use actix_web::{
+    get, middleware::DefaultHeaders, web, App, Error, HttpRequest, HttpResponse, HttpServer,
+};
 use clap::Parser as clap_parser;
 use hostname::get as get_hostname;
+use katex;
 use regex::Regex;
 use sanitize_filename::sanitize as sanitize_path;
 use std::fs::File;
 use std::io::prelude::*;
-use katex;
 use urlencoding::encode as urlencode;
 mod md2html;
 #[macro_use]
@@ -112,6 +114,7 @@ async fn main() -> std::io::Result<()> {
     );
     let server = HttpServer::new(|| {
         App::new()
+            .wrap(DefaultHeaders::new().header("Content-Security-Policy", "style-src * 'unsafe-inline'; script-src 'none'; img-src https://*; default-src 'self'; font-src *"))
             .service(default_css)
             .route("/", web::get().to(router))
             .route("/{entry}", web::get().to(router))
@@ -131,7 +134,9 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/default.css")]
 async fn default_css() -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok().content_type("text/css").body(std::include_str!("./default.css")))
+    Ok(HttpResponse::Ok()
+        .content_type("text/css")
+        .body(std::include_str!("./default.css")))
 }
 
 // route wiki pages
