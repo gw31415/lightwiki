@@ -96,7 +96,7 @@ lazy_static! {
         .push((Regex::new(r"\[\[\s*(.*?)\s*\]\]").unwrap(), |caps| {
             let entry = &caps[1];
             let encoded = urlencode(entry);
-            format!(r#"<a href="./{encoded}">{entry}</a>"#)
+            format!(r#"<a href="./{encoded}" class="wiki-link">{entry}</a>"#)
         }));
     converter
     };
