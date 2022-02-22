@@ -134,7 +134,7 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-#[get("/{filename:.*\\..+}")]
+#[get("/{filename:[^\\.]+\\.[^\\.]+}")]
 async fn static_files(req: HttpRequest) -> Result<HttpResponse, Error> {
     use std::path::PathBuf;
     let filename = req.match_info().query("filename");
