@@ -1,5 +1,6 @@
+use actix_files::NamedFile;
 use actix_web::{
-    get, middleware::DefaultHeaders, web, App, Error, HttpRequest, HttpResponse, HttpServer,
+    get, middleware::DefaultHeaders, App, Error, HttpRequest, HttpResponse, HttpServer,
 };
 use clap::Parser as clap_parser;
 use hostname::get as get_hostname;
@@ -51,9 +52,9 @@ lazy_static! {
     /// マークダウンコンバータ
     static ref CONVERTER: md2html::Converter = {
 
-    let mut converter = md2html::Converter::new(|main, meta| {
-        format!(
-            r#"<!DOCTYPE html>
+        let mut converter = md2html::Converter::new(|main, meta| {
+            format!(
+                r#"<!DOCTYPE html>
 <html lang="ja">
     <head>
         <meta charset="utf-8">
@@ -62,7 +63,7 @@ lazy_static! {
         <meta name="description" content="A wiki site developed for personal use." />
 
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.2/dist/katex.min.css" integrity="sha384-MlJdn/WNKDGXveldHDdyRP1R4CTHr3FeuDNfhsLPYrq2t0UBkUdK2jyTnXPEK1NQ" crossorigin="anonymous" />
-        <link rel="stylesheet" href="/default.css" />
+        <link rel="stylesheet" href="/{THEMEFILE}" />
 
     </head>
     <body>
@@ -72,37 +73,38 @@ lazy_static! {
 
     </body>
 </html>"#,
-            wiki_name = meta.wiki_name,
-            entry_name = meta.entry_name,
-        )
-    });
-    for reg in [
-        r"\$\$((?s:.)*?)\$\$",
-        r"\\\[((?s:.)*?)\\\]",
-    ] {
-        converter
-            .bypass_rules
-            .push((Regex::new(reg).unwrap(), |caps| {
-                let opts = katex::Opts::builder().display_mode(true).build().unwrap();
-                katex::render_with_opts(&caps[1], &opts).unwrap()
-            }));
-    }
+wiki_name = meta.wiki_name,
+entry_name = meta.entry_name,
+)
+});
+for reg in [
+    r"\$\$((?s:.)*?)\$\$",
+    r"\\\[((?s:.)*?)\\\]",
+] {
     converter
         .bypass_rules
-        .push((Regex::new(r"\\\(((?s:.)*?)\\\)").unwrap(), |caps| {
-            let opts = katex::Opts::builder().display_mode(false).build().unwrap();
+        .push((Regex::new(reg).unwrap(), |caps| {
+            let opts = katex::Opts::builder().display_mode(true).build().unwrap();
             katex::render_with_opts(&caps[1], &opts).unwrap()
         }));
-    converter
-        .bypass_rules
-        .push((Regex::new(r"\[\[\s*(.*?)\s*\]\]").unwrap(), |caps| {
-            let entry = &caps[1];
-            let encoded = urlencode(entry);
-            format!(r#"<a href="./{encoded}" class="wiki-link">{entry}</a>"#)
-        }));
-    converter
-    };
 }
+converter
+.bypass_rules
+.push((Regex::new(r"\\\(((?s:.)*?)\\\)").unwrap(), |caps| {
+    let opts = katex::Opts::builder().display_mode(false).build().unwrap();
+    katex::render_with_opts(&caps[1], &opts).unwrap()
+}));
+converter
+.bypass_rules
+.push((Regex::new(r"\[\[\s*(.*?)\s*\]\]").unwrap(), |caps| {
+    let entry = &caps[1];
+    let encoded = urlencode(entry);
+    format!(r#"<a href="./{encoded}" class="wiki-link">{entry}</a>"#)
+}));
+converter
+};
+}
+const THEMEFILE: &str = "theme.css";
 
 // entry point
 #[actix_web::main]
@@ -115,9 +117,9 @@ async fn main() -> std::io::Result<()> {
     let server = HttpServer::new(|| {
         App::new()
             .wrap(DefaultHeaders::new().header("Content-Security-Policy", "style-src * 'unsafe-inline'; script-src 'none'; img-src https://*; default-src 'self'; font-src *"))
-            .service(default_css)
-            .route("/", web::get().to(router))
-            .route("/{entry}", web::get().to(router))
+            .service(static_files)
+            .service(top_page)
+            .service(entry_bind)
     });
 
     if ARGS.tls {
@@ -132,39 +134,41 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-#[get("/default.css")]
-async fn default_css() -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok()
-        .content_type("text/css")
-        .body(std::include_str!("./default.css")))
+#[get("/{filename:.*\\..+}")]
+async fn static_files(req: HttpRequest) -> Result<HttpResponse, Error> {
+    use std::path::PathBuf;
+    let filename = req.match_info().query("filename");
+    if filename == THEMEFILE {
+        return Ok(HttpResponse::Ok()
+            .content_type("text/css")
+            .body(std::include_str!("./default.css")));
+    }
+    let path: PathBuf = req.match_info().query("filename").parse().unwrap();
+    NamedFile::open(path)?.into_response(&req)
 }
 
-// route wiki pages
-async fn router(req: HttpRequest) -> Result<HttpResponse, Error> {
-    let entry_name;
-    match req.match_info().get("entry") {
-        Some(entry) => {
-            entry_name = sanitize_path(entry);
-            if entry_name == ARGS.home {
-                return Ok(HttpResponse::TemporaryRedirect()
-                    .header(actix_web::http::header::LOCATION, "./")
-                    .finish());
-            }
-        }
-        None => {
-            entry_name = sanitize_path(&ARGS.home);
-        }
-    }
+#[get("/{entry:.+}")]
+async fn entry_bind(req: HttpRequest) -> Result<HttpResponse, Error> {
+    entry_to_response(req.match_info().query("entry"))
+}
 
-    // read markdown
+#[get("/")]
+async fn top_page() -> Result<HttpResponse, Error> {
+    entry_to_response(&ARGS.home)
+}
+
+fn entry_to_response(entry_name: &str) -> Result<HttpResponse, Error> {
+    if entry_name != &sanitize_path(entry_name) {
+        return Ok(HttpResponse::NotAcceptable().finish());
+    }
     let mut markdown = String::new();
-    let mut file = File::open(format!("./{}.md", &entry_name))?;
+    let mut file = File::open(format!("./{}.md", entry_name))?;
     file.read_to_string(&mut markdown)?;
 
     let html = CONVERTER.convert(
         markdown,
         md2html::MetaData {
-            entry_name,
+            entry_name: entry_name.to_string(),
             wiki_name: ARGS.wiki_name.clone(),
         },
     );
