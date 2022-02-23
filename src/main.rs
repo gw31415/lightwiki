@@ -149,6 +149,11 @@ async fn static_files(req: HttpRequest) -> Result<HttpResponse, Error> {
 
 #[get("/{entry:.+}")]
 async fn entry_bind(req: HttpRequest) -> Result<HttpResponse, Error> {
+    if req.match_info().query("entry") == &ARGS.home {
+        return Ok(HttpResponse::TemporaryRedirect()
+            .header(actix_web::http::header::LOCATION, "/")
+            .finish());
+    }
     entry_to_response(req.match_info().query("entry"))
 }
 
