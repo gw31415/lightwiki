@@ -23,5 +23,10 @@ a:visited {
 }
 
 .wiki-link-404 {
+	text-decoration: none;
 	color: #CC2200;
+}
+
+.wiki-link-404:visited {
+	color: inherit;
 }
