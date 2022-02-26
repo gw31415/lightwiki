@@ -22,11 +22,12 @@ a:visited {
 	text-decoration: none;
 }
 
+$color404: #CC2200;
 .wiki-link-404 {
 	text-decoration: none;
-	color: #CC2200;
+	color: $color404;
 }
 
 .wiki-link-404:visited {
-	color: inherit;
+	color: $color404;
 }
