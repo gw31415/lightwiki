@@ -99,6 +99,9 @@ converter
 .push((Regex::new(r"\[\[\s*(.*?)\s*\]\]").unwrap(), |caps| {
     let entry = &caps[1];
     let encoded = urlencode(entry);
+    if entry != &sanitize_path(entry) || ! std::path::Path::new(&format!("./{}.md", entry)).exists(){
+        return format!(r#"<a href="./{encoded}" class="wiki-link-404">{entry}</a>"#)
+    }
     format!(r#"<a href="./{encoded}" class="wiki-link">{entry}</a>"#)
 }));
 converter

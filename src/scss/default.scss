@@ -1,9 +1,9 @@
 @import "latex";
 body {
-  font-family: "Times New Roman", "游明朝体", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
-  overflow: auto scroll hidden;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
+	font-family: "Times New Roman", "游明朝体", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+	overflow: auto scroll hidden;
+	overflow-wrap: break-word;
+	word-wrap: break-word;
 }
 
 a {
@@ -11,13 +11,17 @@ a {
 }
 
 .katex-display {
-  overflow: auto hidden;
+	overflow: auto hidden;
 }
 
 a:visited {
-  color: purple;
+	color: purple;
 }
 
 .wiki-link {
-  text-decoration: none;
+	text-decoration: none;
+}
+
+.wiki-link-404 {
+	color: #CC2200;
 }
