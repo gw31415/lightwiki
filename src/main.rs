@@ -104,6 +104,22 @@ converter
     }
     format!(r#"<a href="./{encoded}" class="wiki-link">{entry}</a>"#)
 }));
+for reg in [
+    "<table>",
+    "</table>",
+    "<th>",
+    "</th>",
+    "<tr>",
+    "</tr>",
+    "<td>",
+    "</td>",
+] {
+    converter
+    .bypass_rules
+    .push((Regex::new(reg).unwrap(), |caps| {
+        caps[0].to_string()
+    }));
+}
 converter
 };
 }

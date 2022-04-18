@@ -30,3 +30,33 @@ $$ \sqrt \pi = \int_{-\infty}^\infty e^{x^2}\,\mathrm dx $$
 ゼータ関数：\(\zeta(s) = \sum_{n=1}^\infty\frac1{n^s}\)
 ```
 ゼータ関数：\(\zeta(s) = \sum_{n=1}^\infty\frac1{n^s}\)
+
+### 表
+
+```markdown
+表タイトル
+<table>
+<tr>
+<th>見出し１</th><th>見出し２</th><th>見出し３</th>
+</tr>
+<tr>
+<td>1-l</td><td>1-c</td><td>1-r</td>
+</tr>
+<tr>
+<td>2-l</td><td>2-c</td><td>2-r</td>
+</tr>
+</table>
+```
+
+表タイトル
+<table>
+<tr>
+<th>見出し１</th><th>見出し２</th><th>見出し３</th>
+</tr>
+<tr>
+<td>1-l</td><td>1-c</td><td>1-r</td>
+</tr>
+<tr>
+<td>2-l</td><td>2-c</td><td>2-r</td>
+</tr>
+</table>
