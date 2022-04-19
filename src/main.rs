@@ -162,7 +162,7 @@ async fn static_files(req: HttpRequest) -> Result<HttpResponse, Error> {
             .content_type("text/css")
             .body(std::include_str!("./default.css")));
     }
-    let path: PathBuf = req.match_info().query("filename").parse().unwrap();
+    let path: PathBuf = filename.parse().unwrap();
     NamedFile::open(path)?.into_response(&req)
 }
 
