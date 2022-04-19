@@ -153,7 +153,7 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-#[get("/{filename:[^\\.]+\\.[^\\.]+}")]
+#[get("/{filename:.*\\..*}")]
 async fn static_files(req: HttpRequest) -> Result<HttpResponse, Error> {
     use std::path::PathBuf;
     let filename = req.match_info().query("filename");
@@ -162,8 +162,13 @@ async fn static_files(req: HttpRequest) -> Result<HttpResponse, Error> {
             .content_type("text/css")
             .body(std::include_str!("./default.css")));
     }
-    let path: PathBuf = filename.parse().unwrap();
-    NamedFile::open(path)?.into_response(&req)
+    if filename.chars().nth(0) != Some('.') {
+        let path: PathBuf = filename.parse().unwrap();
+        if let Ok(namedfile) = NamedFile::open(path) {
+            return namedfile.into_response(&req);
+        }
+    }
+    return Err(HttpResponse::NotFound().body("404 not found.").into());
 }
 
 #[get("/{entry:.+}")]
@@ -182,20 +187,21 @@ async fn top_page() -> Result<HttpResponse, Error> {
 }
 
 fn entry_to_response(entry_name: &str) -> Result<HttpResponse, Error> {
-    if entry_name != &sanitize_path(entry_name) {
-        return Ok(HttpResponse::NotAcceptable().finish());
-    }
-    let mut markdown = String::new();
-    let mut file = File::open(format!("./{}.md", entry_name))?;
-    file.read_to_string(&mut markdown)?;
+    if entry_name == &sanitize_path(entry_name) {
+        if let Ok(mut file) = File::open(format!("./{}.md", entry_name)) {
+            let mut markdown = String::new();
+            file.read_to_string(&mut markdown)?;
 
-    let html = CONVERTER.convert(
-        markdown,
-        md2html::MetaData {
-            entry_name: entry_name.to_string(),
-            wiki_name: ARGS.wiki_name.clone(),
-        },
-    );
-    // return html
-    Ok(HttpResponse::Ok().content_type("text/html").body(html))
+            let html = CONVERTER.convert(
+                markdown,
+                md2html::MetaData {
+                    entry_name: entry_name.to_string(),
+                    wiki_name: ARGS.wiki_name.clone(),
+                },
+            );
+            // return html
+            return Ok(HttpResponse::Ok().content_type("text/html").body(html));
+        }
+    }
+    return Err(HttpResponse::NotFound().body("404 not found.").into());
 }
